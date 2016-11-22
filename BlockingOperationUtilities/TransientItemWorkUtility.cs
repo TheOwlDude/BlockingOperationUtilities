@@ -9,13 +9,9 @@ namespace BlockingOperationUtilities
 {
     public class TransientItemWorkUtility<T> 
     {
-        private Dictionary<String, TransientItemWrapper<T>> itemsWithTokens = new Dictionary<string, TransientItemWrapper<T>>();
-        private Queue<TransientItemWrapper<T>> queue;
-        private object itemSync = new object();
         private Thread publishThread;
 
         Action<T> blockingOperation;
-        private int? maxCapacity = null;
 
         public TransientItemWorkUtility(Action<T> blockingOperation, string publishThreadName):this(blockingOperation, publishThreadName, null)
         {}
@@ -31,26 +27,6 @@ namespace BlockingOperationUtilities
             publishThread.IsBackground = true;
         }
 
-        public void AddWorkItem(T item)
-        {
-            lock(itemSync)
-            {
-                string tokenValue = GetToken(item);
-                TransientItemWrapper<T> wrappedItem;
-                if (tokenValue != null && itemsWithTokens.TryGetValue(tokenValue, out wrappedItem)) //if token is already in queue then just swap.
-                {
-                    wrappedItem.Item = item;
-                    return;
-                }
-
-                //if no more room than item is dropped
-                if (maxCapacity != null && queue.Count >= maxCapacity.Value) return;
-
-                TransientItemWrapper<T> transientItemWrapper = new TransientItemWrapper<T>(item);
-                queue.Enqueue(transientItemWrapper);
-                if (tokenValue != null) itemsWithTokens[tokenValue] = transientItemWrapper;
-            }
-        }
 
         private void WorkThreadProc()
         {
