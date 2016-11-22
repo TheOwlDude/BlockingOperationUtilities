@@ -46,20 +46,29 @@ namespace BlockingOperationUtilities.DedupingQueue
             }
         }
 
-        public T Dequeue()
+        /// <summary>
+        /// Retrieves the next item if there is one. 
+        /// </summary>
+        /// <param name="item">output parameter to receive the dequeued item</param>
+        /// <returns>true if an item has been retrieved, false if the queue was empty.</returns>                 
+        public bool Dequeue(out T item)
         {
-            T result = default(T);
+            item = default(T);
             lock (itemSync)
             {
                 if (queue.Count > 0)
                 {
                     DedupingQueueItemWrapper<T> dequeuedItemWrapper = queue.Dequeue();
-                    result = dequeuedItemWrapper.Item;
-                    String idToken = GetToken(result);
+                    item = dequeuedItemWrapper.Item;
+                    String idToken = GetToken(item);
                     if (idToken != null) itemsWithTokens.Remove(idToken);
+                    return true;
+                }
+                else
+                {
+                    return false;
                 }
             }
-            return result;
         }
 
         public int Size {  get { return queue.Count; } }

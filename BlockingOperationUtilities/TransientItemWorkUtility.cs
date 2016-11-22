@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BlockingOperationUtilities.DedupingQueue;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,7 @@ namespace BlockingOperationUtilities
     public class TransientItemWorkUtility<T> 
     {
         private Thread publishThread;
-
+        private DedupingQueue<T> queue;
         Action<T> blockingOperation;
 
         public TransientItemWorkUtility(Action<T> blockingOperation, string publishThreadName):this(blockingOperation, publishThreadName, null)
@@ -19,39 +20,35 @@ namespace BlockingOperationUtilities
         public TransientItemWorkUtility(Action<T> blockingOperation, string publishThreadName, int? maxCapacity)
         {
             this.blockingOperation = blockingOperation;
-            this.maxCapacity = maxCapacity;
-            queue = maxCapacity == null ? new Queue<TransientItemWrapper<T>>() : new Queue<TransientItemWrapper<T>>(maxCapacity.Value);
+            queue = new DedupingQueue<T>(maxCapacity);
 
             publishThread = new Thread(new ThreadStart(WorkThreadProc));
-            publishThread.Name = publishThreadName;
-            publishThread.IsBackground = true;
+            publishThread.Name = publishThreadName;     
+            publishThread.IsBackground = true;          //making thread background allows process to terminate when the operation is blocked.
         }
 
+        /// <summary>
+        /// Begins processing of work queue
+        /// </summary>
+        public void Start()
+        {
+            publishThread.Start();
+        }
+
+        public DedupingQueueAddResult Add(T item)
+        {
+            return queue.AddItem(item);
+        }
 
         private void WorkThreadProc()
         {
-            bool encounteredEmptyQueue = false;
             while(true)
             {
-                if (encounteredEmptyQueue)
+                T item;
+                if (!queue.Dequeue(out item))
                 {
                     Thread.Sleep(50);
-                    encounteredEmptyQueue = false;
-                }
-
-                T item;
-                lock(itemSync)
-                {
-                    if (queue.Count == 0)   //Attempting to Dequeue from an empty queue throws InvalidOperationException
-                    {
-                        encounteredEmptyQueue = true;     //don't want to sleep inside the lock
-                        continue;
-                    }
-
-                    TransientItemWrapper<T> wrapper = queue.Dequeue();
-                    item = wrapper.Item;
-                    string tokenValue = GetToken(item);
-                    if (tokenValue != null) itemsWithTokens.Remove(tokenValue);
+                    continue;
                 }
 
                 try
@@ -66,15 +63,6 @@ namespace BlockingOperationUtilities
             }
         }
 
-        private string GetToken(T item)
-        {
-            IAmIDentifiable itemAsIAmIdentifiable = item as IAmIDentifiable;
-            return itemAsIAmIdentifiable != null ? itemAsIAmIdentifiable.IdentifyingToken() : null;
-        }
-
-        public virtual void HandleOperationErrors(Exception e)
-        {
-
-        }
+        protected virtual void HandleOperationErrors(Exception e) {}
     }
 }
