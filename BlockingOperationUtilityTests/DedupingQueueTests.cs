@@ -27,13 +27,13 @@ namespace BlockingOperationUtilityTests
             Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(new DedupableInt(3, "foo")));
             Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(new DedupableInt(4, null)));
 
-            Assert.Equals(2, queue.Size);
+            Assert.AreEqual(2, queue.Size);
             DedupableInt first;
             DedupableInt second;
             Assert.IsNotNull(queue.Dequeue(out first));
             Assert.IsNotNull(queue.Dequeue(out second));
-            Assert.Equals(3, first.getVal());
-            Assert.Equals(4, second.getVal());
+            Assert.AreEqual(3, first.getVal());
+            Assert.AreEqual(4, second.getVal());
         }
 
         [Test]
@@ -41,11 +41,11 @@ namespace BlockingOperationUtilityTests
         {
             DedupingQueue<DedupableInt> queue = new DedupingQueue<DedupableInt>(1);
 
-            Assert.Equals(0, queue.Size);
+            Assert.AreEqual(0, queue.Size);
             Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(new DedupableInt(3, "foo")));
-            Assert.Equals(1, queue.Size);
+            Assert.AreEqual(1, queue.Size);
             Assert.AreEqual(DedupingQueueAddResult.QueueFull, queue.AddItem(new DedupableInt(4, null)));
-            Assert.Equals(1, queue.Size);
+            Assert.AreEqual(1, queue.Size);
         }
 
 
@@ -57,14 +57,14 @@ namespace BlockingOperationUtilityTests
             Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(new DedupableInt(3, "foo")));
             Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(new DedupableInt(4, null)));
             Assert.AreEqual(DedupingQueueAddResult.Duplicate, queue.AddItem(new DedupableInt(5, "foo")));
-            Assert.Equals(2, queue.Size);
+            Assert.AreEqual(2, queue.Size);
 
             DedupableInt first;
             DedupableInt second;
             Assert.IsNotNull(queue.Dequeue(out first));
             Assert.IsNotNull(queue.Dequeue(out second));
-            Assert.Equals(5, first.getVal());
-            Assert.Equals(4, second.getVal());
+            Assert.AreEqual(5, first.getVal());
+            Assert.AreEqual(4, second.getVal());
         }
 
         [Test]
@@ -79,20 +79,20 @@ namespace BlockingOperationUtilityTests
             //in the Dictionary either becuase then after a matched id replace the object would STILL not be in the queue
             Assert.AreEqual(DedupingQueueAddResult.QueueFull, queue.AddItem(new DedupableInt(5, "bar")));
 
-            Assert.Equals(2, queue.Size);
+            Assert.AreEqual(2, queue.Size);
 
             DedupableInt first;
             Assert.IsTrue(queue.Dequeue(out first));
-            Assert.Equals(3, first.getVal());
+            Assert.AreEqual(3, first.getVal());
 
             Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(new DedupableInt(6, "bar")));
 
             DedupableInt second;
             DedupableInt third;
             Assert.IsTrue(queue.Dequeue(out second));
-            Assert.Equals(4, second.getVal());
+            Assert.AreEqual(4, second.getVal());
             Assert.IsTrue(queue.Dequeue(out third));
-            Assert.Equals(6, third.getVal());
+            Assert.AreEqual(6, third.getVal());
         }
 
         [Test]
@@ -107,6 +107,36 @@ namespace BlockingOperationUtilityTests
             //After the dequeue above the item is gone from the queue. If the item were still in the Dictionary then
             //queueing the same token would cause a replace for an item not in the queue
             Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(new DedupableInt(4, "foo")));
+        }
+
+        [Test]
+        public void QueueWorksWithNonDedupableTypes()
+        {
+            DedupingQueue<int> queue = new DedupingQueue<int>(2);
+            Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(1));
+            Assert.AreEqual(DedupingQueueAddResult.NewItem, queue.AddItem(1));
+            Assert.AreEqual(DedupingQueueAddResult.QueueFull, queue.AddItem(1));
+
+            int dequeuedValue;
+            Assert.IsTrue(queue.Dequeue(out dequeuedValue));
+            Assert.AreEqual(1, dequeuedValue);
+            Assert.IsTrue(queue.Dequeue(out dequeuedValue));
+            Assert.AreEqual(1, dequeuedValue);
+            Assert.IsFalse(queue.Dequeue(out dequeuedValue));
+            Assert.AreEqual(0, dequeuedValue);
+        }
+
+        [Test]
+        public void EnqueuingNullWorks()
+        {
+            DedupingQueue<object> queue = new DedupingQueue<object>();
+            queue.AddItem(null);
+
+            object dequeuedItem;
+            Assert.IsTrue(queue.Dequeue(out dequeuedItem));
+            Assert.IsNull(dequeuedItem);
+            Assert.IsFalse(queue.Dequeue(out dequeuedItem));
+            Assert.IsNull(dequeuedItem);
         }
 
     }

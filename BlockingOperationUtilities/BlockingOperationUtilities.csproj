@@ -44,7 +44,6 @@
     <Compile Include="DedupingQueue\DedupingQueue.cs" />
     <Compile Include="DedupingQueue\DedupingQueueAddResult.cs" />
     <Compile Include="DedupingQueue\IDedupable.cs" />
-    <Compile Include="IAmIdentifiable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TransientItemWorkUtility.cs" />
     <Compile Include="DedupingQueue\DedupingQueueItemWrapper.cs" />

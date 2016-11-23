@@ -51,7 +51,7 @@ namespace BlockingOperationUtilities.DedupingQueue
         /// </summary>
         /// <param name="item">output parameter to receive the dequeued item</param>
         /// <returns>true if an item has been retrieved, false if the queue was empty.</returns>                 
-        public bool Dequeue(out T item)
+        public bool Dequeue(out T item)      //using an output parameter rather than the return value for the dequeued item supports T being a value type.
         {
             item = default(T);
             lock (itemSync)
